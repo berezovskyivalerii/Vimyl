@@ -2,6 +2,7 @@ package ui
 
 import (
 	"log/slog"
+	"path/filepath"
 
 	"gio.test/files"
 	"gioui.org/io/key"
@@ -10,8 +11,43 @@ import (
 )
 
 func (ui *UI) Update(gtx layout.Context) {
+	prevDirIndex := ui.DSelectedIndex
+
 	// Logic for folders list
 	ui.handleListNav(gtx, &ui.DListWrapper, &ui.DSelectedIndex, len(ui.CurrentDirs), &ui.DListState, "DIRS")
+
+	shouldUpdatePrewiew := prevDirIndex != ui.DSelectedIndex
+
+	if len(ui.CurrentFiles) == 0 && len(ui.CurrentDirs) > 0 {
+		shouldUpdatePrewiew = true
+	}
+
+	if shouldUpdatePrewiew && len(ui.CurrentDirs) > 0 {
+		seletedDir := ui.CurrentDirs[ui.DSelectedIndex]
+
+		// Check for General folder
+		if seletedDir.Name() == "General" { // If true than search by default path
+			generalFiles, err := files.ListFiles(ui.PathInput.Text())
+			if err == nil {
+				ui.CurrentFiles = generalFiles
+				ui.MSelectedIndex = 0
+				ui.MListState.ScrollTo(0)
+			} else {
+				ui.CurrentFiles = nil
+			}
+		} else { // In other way search by specific one
+			fullPath := filepath.Join(ui.PathInput.Text(), seletedDir.Name())
+			newFiles, err := files.ListFiles(fullPath)
+			if err == nil {
+				ui.CurrentFiles = newFiles
+				ui.MSelectedIndex = 0
+				ui.MListState.ScrollTo(0)
+			} else {
+				ui.CurrentFiles = nil
+			}
+		}
+	}
+
 	// Logic for files list
 	ui.handleListNav(gtx, &ui.MListWrapper, &ui.MSelectedIndex, len(ui.CurrentFiles), &ui.MListState, "FILES")
 
@@ -27,7 +63,7 @@ func (ui *UI) Update(gtx layout.Context) {
 	ui.handlePathInput(gtx)
 }
 
-// Helper to do not duplicate lofic for each list
+// Helper to do not duplicate logic for each list
 func (ui *UI) handleListNav(gtx layout.Context, tag *widget.Clickable, index *int, length int, listState *widget.List, logName string) {
 	for {
 		ev, ok := gtx.Event(key.Filter{Focus: tag})
@@ -36,6 +72,10 @@ func (ui *UI) handleListNav(gtx layout.Context, tag *widget.Clickable, index *in
 		}
 		if ke, ok := ev.(key.Event); ok && ke.State == key.Press {
 			switch ke.Name {
+			case key.NameLeftArrow, "H":
+				gtx.Execute(key.FocusCmd{Tag: &ui.DListWrapper})
+			case key.NameRightArrow, "L":
+				gtx.Execute(key.FocusCmd{Tag: &ui.MListWrapper})
 			case key.NameDownArrow, "J":
 				if *index < length-1 {
 					*index++
@@ -79,12 +119,19 @@ func (ui *UI) handlePathInput(gtx layout.Context) {
 				ui.CurrentDirs = nil
 			} else {
 				ui.ErrMessage = ""
-				ui.CurrentFiles = filesList
 				ui.CurrentDirs = dirsList
-
-				ui.MSelectedIndex = 0
 				ui.DSelectedIndex = 0
 
+				if len(dirsList) > 0 {
+					firstDir := dirsList[0]
+					previewPath := filepath.Join(path, firstDir.Name())
+					previewFiles, _ := files.ListFiles(previewPath)
+					ui.CurrentFiles = previewFiles
+				} else {
+					ui.CurrentFiles = filesList
+				}
+
+				ui.MSelectedIndex = 0
 				// Focus to folders by default
 				gtx.Execute(key.FocusCmd{Tag: &ui.DListWrapper})
 			}

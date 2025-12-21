@@ -56,7 +56,7 @@ func (ui *UI) layoutSplitView(gtx layout.Context) layout.Dimensions {
 		layout.Flexed(0.25, func(gtx layout.Context) layout.Dimensions {
 			return drawList(gtx, ui.Theme, &ui.DListWrapper, &ui.DListState,
 				len(ui.CurrentDirs), ui.DSelectedIndex, func(i int) string {
-					return "[[DIR]]\t" + ui.CurrentDirs[i].Name()
+					return ui.CurrentDirs[i].Name()
 				})
 		}),
 
@@ -64,7 +64,7 @@ func (ui *UI) layoutSplitView(gtx layout.Context) layout.Dimensions {
 		layout.Flexed(0.75, func(gtx layout.Context) layout.Dimensions {
 			return drawList(gtx, ui.Theme, &ui.MListWrapper, &ui.MListState,
 				len(ui.CurrentFiles), ui.MSelectedIndex, func(i int) string {
-					return "[[MUS]]\t" + ui.CurrentFiles[i].Name()
+					return ui.CurrentFiles[i].Name()
 				})
 		}),
 	)
