@@ -7,6 +7,7 @@ import (
 	"gio.test/files"
 	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/widget"
 )
 
@@ -48,6 +49,18 @@ func (ui *UI) Update(gtx layout.Context) {
 		}
 	}
 
+	if ui.ProgressSlider.Update(gtx) {
+		ui.Audio.Seek(float64(ui.ProgressSlider.Value))
+	}
+
+	if ui.Audio.IsPlaying && !ui.ProgressSlider.Dragging() {
+		pos, dur := ui.Audio.GetProgress()
+		if dur > 0 {
+			ui.ProgressSlider.Value = float32(pos / dur)
+			// Force interface redraw to animate slider smoothly
+			gtx.Execute(op.InvalidateCmd{})
+		}
+	}
 	// Logic for files list
 	ui.handleListNav(gtx, &ui.MListWrapper, &ui.MSelectedIndex, len(ui.CurrentFiles), &ui.MListState, "FILES")
 
@@ -60,6 +73,10 @@ func (ui *UI) Update(gtx layout.Context) {
 		gtx.Execute(key.FocusCmd{Tag: &ui.DListWrapper})
 	}
 
+	for ui.BtnPause.Clicked(gtx) {
+		ui.Audio.TogglePause()
+		slog.Info("Button has been pressed")
+	}
 	ui.handlePathInput(gtx)
 }
 
@@ -92,6 +109,14 @@ func (ui *UI) handleListNav(gtx layout.Context, tag *widget.Clickable, index *in
 			case key.NameEnd:
 				*index = length - 1
 				listState.ScrollTo(*index)
+			case key.NameSpace:
+				ui.Audio.TogglePause()
+			case key.NameReturn, "Enter":
+				if len(ui.CurrentFiles) > 0 {
+					f := ui.CurrentFiles[ui.MSelectedIndex]
+					fullPath := filepath.Join(ui.PathInput.Text(), f.Name())
+					ui.Audio.PlayFile(fullPath)
+				}
 			}
 			slog.Info("Nav Key Pressed", "list", logName, "key", ke.Name)
 		}

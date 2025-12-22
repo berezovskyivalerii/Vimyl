@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image"
 	"image/color"
 
 	"gioui.org/io/event"
@@ -13,46 +14,59 @@ import (
 )
 
 func drawList(gtx layout.Context, th *material.Theme, wrapper *widget.Clickable, listState *widget.List, count int, selectedIndex int, namer func(int) string) layout.Dimensions {
-	// Refister Tag for events
 	event.Op(gtx.Ops, wrapper)
 
-	// Check focus
 	isFocused := gtx.Source.Focused(wrapper)
-	borderColor := color.NRGBA{A: 0}
+
+	borderColor := ColorBorder
 	if isFocused {
-		borderColor = color.NRGBA{R: 255, A: 255}
+		borderColor = ColorAccent
 	}
 
-	// Wrapper for list
+	// Wrapper
 	return wrapper.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return widget.Border{
 			Color:        borderColor,
-			CornerRadius: unit.Dp(0),
-			Width:        unit.Dp(2),
+			CornerRadius: unit.Dp(8),
+			Width:        unit.Dp(1),
 		}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-			// List by itself
-			listStyle := material.List(th, listState)
-			return listStyle.Layout(gtx, count, func(gtx layout.Context, index int) layout.Dimensions {
-				// Here we get text from helper func
-				txt := namer(index)
-				return layout.Stack{}.Layout(gtx,
-					// Color background when selected
-					layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-						if index == selectedIndex && isFocused {
-							defer clip.Rect{Max: gtx.Constraints.Min}.Push(gtx.Ops).Pop()
-							paint.Fill(gtx.Ops, color.NRGBA{R: 220, G: 220, B: 220, A: 255})
-						}
-						return layout.Dimensions{Size: gtx.Constraints.Min}
-					}),
+			return layout.UniformInset(unit.Dp(4)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				listStyle := material.List(th, listState)
+				listStyle.AnchorStrategy = material.Overlay
 
-					// Text
-					layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-						return layout.UniformInset(unit.Dp(5)).Layout(gtx,
-							material.Body1(th, txt).Layout,
-						)
-					}),
-				)
+				return listStyle.Layout(gtx, count, func(gtx layout.Context, index int) layout.Dimensions {
+					txt := namer(index)
+
+					textColor := ColorText
+					bgColor := color.NRGBA{A: 0}
+
+					if index == selectedIndex {
+						if isFocused {
+							bgColor = ColorAccent
+							textColor = ColorBackground
+						} else {
+							bgColor = ColorSurface
+						}
+					}
+
+					return layout.Stack{}.Layout(gtx,
+						layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+							defer clip.UniformRRect(image.Rectangle{Max: gtx.Constraints.Min}, 4).Push(gtx.Ops).Pop()
+							paint.Fill(gtx.Ops, bgColor)
+							return layout.Dimensions{Size: gtx.Constraints.Min}
+						}),
+
+						layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+							return layout.UniformInset(unit.Dp(8)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+								lbl := material.Body1(th, txt)
+								lbl.Color = textColor
+								return lbl.Layout(gtx)
+							})
+						}),
+					)
+				})
 			})
 		})
 	})
 }
+

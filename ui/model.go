@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 
+	"gio.test/player"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -25,7 +26,11 @@ type UI struct {
 	CurrentFiles   []os.FileInfo
 	MSelectedIndex int
 
-	ErrMessage string
+	BtnPause widget.Clickable
+
+	ErrMessage     string
+	Audio          *player.AudioPlayer
+	ProgressSlider widget.Float
 }
 
 func NewUI(th *material.Theme) *UI {
@@ -33,10 +38,11 @@ func NewUI(th *material.Theme) *UI {
 
 	ui.PathInput.SingleLine = true
 	ui.PathInput.Submit = true
-	ui.PathInput.SetText("/home")
+	ui.PathInput.SetText("/home/vasilisk/Music")
 
 	ui.DListState.Axis = layout.Vertical
 	ui.MListState.Axis = layout.Vertical
 
+	ui.Audio = player.NewAudioPlayer()
 	return ui
 }
