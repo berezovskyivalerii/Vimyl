@@ -105,4 +105,3 @@ func (p *AudioPlayer) Seek(percentage float64) {
 	p.streamer.Seek(pos)
 	speaker.Unlock()
 }
-

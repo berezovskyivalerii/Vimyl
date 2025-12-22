@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"image/color"
 
 	"gioui.org/layout"
@@ -52,6 +53,29 @@ func (ui *UI) layoutHeader(gtx layout.Context) layout.Dimensions {
 
 func (ui *UI) layoutControls(gtx layout.Context) layout.Dimensions {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+			pos, dur := ui.Audio.GetProgress()
+
+			current := fmt.Sprintf("%d:%d", int64(pos/60), int64(pos)%60)
+			duration := fmt.Sprintf("%d:%d", int64(dur/60), int64(dur)%60)
+
+			return layout.Flex{
+				Axis:    layout.Horizontal,
+				Spacing: layout.SpaceBetween,
+			}.Layout(gtx,
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					label := material.Body1(ui.Theme, current)
+					label.Color = ColorText
+					return label.Layout(gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					label := material.Body1(ui.Theme, duration)
+					label.Color = ColorText
+					return label.Layout(gtx)
+				}),
+			)
+		}),
+
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			s := material.Slider(ui.Theme, &ui.ProgressSlider)
 			s.Color = ColorAccent
@@ -125,4 +149,3 @@ func (ui *UI) layoutSplitView(gtx layout.Context) layout.Dimensions {
 		}),
 	)
 }
-
