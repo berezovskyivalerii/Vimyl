@@ -51,13 +51,21 @@ func (ui *UI) layoutHeader(gtx layout.Context) layout.Dimensions {
 	)
 }
 
+func formatSeconds(sec float64) string {
+	secInt64 := int64(sec) % 60
+	if secInt64 < 10 {
+		return fmt.Sprintf("0%d", secInt64)
+	}
+	return fmt.Sprintf("%d", secInt64)
+}
+
 func (ui *UI) layoutControls(gtx layout.Context) layout.Dimensions {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 			pos, dur := ui.Audio.GetProgress()
 
-			current := fmt.Sprintf("%d:%d", int64(pos/60), int64(pos)%60)
-			duration := fmt.Sprintf("%d:%d", int64(dur/60), int64(dur)%60)
+			current := fmt.Sprintf("%d:%s", int64(pos/60), formatSeconds(pos))
+			duration := fmt.Sprintf("%d:%s", int64(dur/60), formatSeconds(dur))
 
 			return layout.Flex{
 				Axis:    layout.Horizontal,
@@ -83,15 +91,52 @@ func (ui *UI) layoutControls(gtx layout.Context) layout.Dimensions {
 		}),
 
 		layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			text := "Pause"
-			if !ui.Audio.IsPlaying {
-				text = "Resume"
-			}
+			return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{
+					Axis:      layout.Horizontal,
+					Alignment: layout.Middle,
+					Spacing:   layout.SpaceBetween,
+				}.Layout(gtx,
 
-			btn := material.Button(ui.Theme, &ui.BtnPause, text)
-			btn.Background = ColorAccent
-			btn.Color = ColorBackground
-			return btn.Layout(gtx)
+					// Button Prev
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						btn := material.IconButton(ui.Theme, &ui.BtnPrev, ui.IconPrev, "Prev")
+						btn.Color = ColorText
+						btn.Background = ColorSurface
+						btn.Size = unit.Dp(20)
+						btn.Inset = layout.UniformInset(unit.Dp(10))
+						return btn.Layout(gtx)
+					}),
+
+					layout.Rigid(layout.Spacer{Width: unit.Dp(20)}.Layout),
+
+					// Button Play
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						icon := ui.IconPlay
+						if ui.Audio.IsPlaying {
+							icon = ui.IconPause
+						}
+						btn := material.IconButton(ui.Theme, &ui.BtnPlay, icon, "Toggle")
+						btn.Color = ColorText
+						btn.Background = ColorAccent
+						btn.Size = unit.Dp(28)
+						btn.Inset = layout.UniformInset(unit.Dp(14))
+						return btn.Layout(gtx)
+					}),
+
+					layout.Rigid(layout.Spacer{Width: unit.Dp(20)}.Layout),
+
+					// Button Next
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						btn := material.IconButton(ui.Theme, &ui.BtnNext, ui.IconNext, "Next")
+						btn.Color = ColorText
+						btn.Background = ColorSurface
+						btn.Size = unit.Dp(20)
+						btn.Inset = layout.UniformInset(unit.Dp(10))
+						return btn.Layout(gtx)
+					}),
+				)
+			})
 		}),
 
 		layout.Rigid(layout.Spacer{Height: unit.Dp(15)}.Layout),
@@ -127,6 +172,12 @@ func (ui *UI) layoutInputZone(gtx layout.Context) layout.Dimensions {
 			return layout.Dimensions{}
 		}),
 	)
+}
+
+type SongInfo struct {
+	Name        string
+	Duration    float64
+	UpdatedTime float64
 }
 
 // Split View (Folders | Files)

@@ -73,11 +73,51 @@ func (ui *UI) Update(gtx layout.Context) {
 		gtx.Execute(key.FocusCmd{Tag: &ui.DListWrapper})
 	}
 
-	for ui.BtnPause.Clicked(gtx) {
+	// Buttons controls
+	for ui.BtnPlay.Clicked(gtx) {
 		ui.Audio.TogglePause()
 		slog.Info("Button has been pressed")
 	}
+
+	if ui.BtnNext.Clicked(gtx) {
+		if len(ui.CurrentFiles) > 0 {
+			ui.MSelectedIndex++
+
+			if ui.MSelectedIndex >= len(ui.CurrentFiles) {
+				ui.MSelectedIndex = 0
+			}
+
+			ui.MListState.ScrollTo(ui.MSelectedIndex)
+			ui.playCurrentSelection()
+
+		}
+	}
+
+	if ui.BtnPrev.Clicked(gtx) {
+		if len(ui.CurrentFiles) > 0 {
+			ui.MSelectedIndex--
+
+			if ui.MSelectedIndex < 0 {
+				ui.MSelectedIndex = len(ui.CurrentFiles) - 1
+			}
+
+			ui.MListState.ScrollTo(ui.MSelectedIndex)
+			ui.playCurrentSelection()
+		}
+	}
 	ui.handlePathInput(gtx)
+}
+
+func (ui *UI) playCurrentSelection() {
+	if len(ui.CurrentFiles) == 0 {
+		return
+	}
+
+	f := ui.CurrentFiles[ui.MSelectedIndex]
+	if !f.IsDir() {
+		fullPath := filepath.Join(ui.PathInput.Text(), f.Name())
+		ui.Audio.PlayFile(fullPath)
+	}
 }
 
 // Helper to do not duplicate logic for each list
